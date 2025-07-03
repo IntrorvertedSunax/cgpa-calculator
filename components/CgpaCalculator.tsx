@@ -58,9 +58,6 @@ const CgpaCalculator: React.FC = () => {
                 <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mt-1 mb-2">
                     Cumulative Grade Point Average (CGPA)
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                    Enter the GPA you obtained in each semester. The CGPA will be calculated based on the official credit distribution for each semester.
-                </p>
             </div>
             
             <CgpaDisplay cgpa={cgpaData.cgpa} totalCredits={cgpaData.totalCredits} />

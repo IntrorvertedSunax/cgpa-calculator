@@ -85,6 +85,7 @@ export const SEMESTER_COURSES: SemesterCourses = {
     { code: 'EEE392', name: 'Power System I Lab', credits: 1.5 },
   ],
   '4.1': [
+    { code: 'EEE409', name: 'Project and Thesis', credits: 1 },
     { code: 'EEE401', name: 'Digital Signal Processing', credits: 3 },
     { code: 'EEE402', name: 'Digital Signal Processing Lab', credits: 1.5 },
     { code: 'EEE411', name: 'Power System Protection', credits: 3 },
