@@ -76,7 +76,8 @@ export const SEMESTER_COURSES: SemesterCourses = {
   '3.2': [
     { code: 'EEE361', name: 'Communication Theory', credits: 4 },
     { code: 'EEE362', name: 'Communication Theory Lab', credits: 1.5 },
-    { code: 'EEE363', name: 'Electronic circuit for communication system', credits: 2.75 },
+    { code: 'EEE363', name: 'Electronic circuit for communication system', credits: 2 },
+    { code: 'EEE369', name: 'Industrial Training', credits: 0.75 },
     { code: 'EEE371', name: 'Control System', credits: 3 },
     { code: 'EEE372', name: 'Control System Lab', credits: 1.5 },
     { code: 'EEE381', name: 'Microprocessor, Interfacing and System design', credits: 3 },
