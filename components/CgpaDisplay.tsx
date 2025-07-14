@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface CgpaDisplayProps {
@@ -16,7 +15,7 @@ const CgpaDisplay: React.FC<CgpaDisplayProps> = ({ cgpa, totalCredits }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-sm mx-auto text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-sm mx-auto text-center relative">
             <h2 className="text-lg font-medium text-slate-500 dark:text-slate-400">
                 Cumulative GPA (CGPA)
             </h2>

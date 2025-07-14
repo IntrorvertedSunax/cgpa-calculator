@@ -17,7 +17,7 @@ const SgpaDisplay: React.FC<SgpaDisplayProps> = ({ sgpa, offeredCredits, secured
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-md mx-auto text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-md mx-auto text-center relative">
             <h2 className="text-lg font-medium text-slate-500 dark:text-slate-400">
                 Semester GPA (SGPA)
             </h2>
