@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Course } from '../types';
@@ -6,9 +7,39 @@ import { SEMESTER_COURSES, GRADE_POINTS, GRADE_OPTIONS } from '../constants';
 import SgpaDisplay from './SgpaDisplay';
 import DownloadIcon from './icons/DownloadIcon';
 
-const SgpaCalculator: React.FC = () => {
-  const [selectedSemesterKey, setSelectedSemesterKey] = useState<string>('');
-  const [grades, setGrades] = useState<Record<string, string>>({});
+interface SgpaCalculatorProps {
+  sgpaState: {
+    selectedSemesterKey: string;
+    grades: Record<string, string>;
+  };
+  setSgpaState: React.Dispatch<React.SetStateAction<{
+    selectedSemesterKey: string;
+    grades: Record<string, string>;
+  }>>;
+}
+
+const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState }) => {
+  const { selectedSemesterKey, grades } = sgpaState;
+  const [isSticky, setIsSticky] = useState(false);
+  const displayElementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const displayElement = displayElementRef.current;
+    if (!displayElement) return;
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+            setIsSticky(!entry.isIntersecting && entry.boundingClientRect.y < 0);
+        },
+        { threshold: 0 }
+    );
+    
+    observer.observe(displayElement);
+
+    return () => {
+        if (displayElement) observer.unobserve(displayElement);
+    };
+  }, []);
 
   const courses: Course[] = useMemo(
     () => (selectedSemesterKey ? SEMESTER_COURSES[selectedSemesterKey] : []),
@@ -45,15 +76,20 @@ const SgpaCalculator: React.FC = () => {
     };
   }, [grades, courses]);
 
-
   const handleGradeChange = (courseCode: string, grade: string) => {
-    setGrades(prev => ({ ...prev, [courseCode]: grade }));
+    setSgpaState(prev => ({ 
+      ...prev,
+      grades: { ...prev.grades, [courseCode]: grade }
+    }));
   };
   
   const handleSemesterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newSemesterKey = e.target.value;
-      setSelectedSemesterKey(newSemesterKey);
-      setGrades({}); // Reset grades when semester changes
+      // Reset grades when semester changes for a new calculation
+      setSgpaState({
+        selectedSemesterKey: newSemesterKey,
+        grades: {}
+      });
   };
 
   const handleDownloadPdf = () => {
@@ -127,77 +163,97 @@ const SgpaCalculator: React.FC = () => {
 
   return (
     <div>
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
             <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mt-1 mb-2">
                 Grade Point Average (GPA)
             </h2>
         </div>
         
-        <SgpaDisplay 
-            sgpa={semesterStats.sgpa}
-            offeredCredits={semesterStats.offeredCredits}
-            securedCredits={semesterStats.securedCredits}
-            totalPoints={semesterStats.totalPoints}
-        />
+        {/* In-flow element that transitions out */}
+        <div 
+            ref={displayElementRef} 
+            className={`py-4 transition-all duration-300 ease-in-out ${isSticky ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
+        >
+            <SgpaDisplay 
+                sgpa={semesterStats.sgpa}
+                offeredCredits={semesterStats.offeredCredits}
+                securedCredits={semesterStats.securedCredits}
+                totalPoints={semesterStats.totalPoints}
+                isSticky={false}
+            />
+        </div>
 
-        {canDownload && (
-            <div className="max-w-md mx-auto mt-6 text-center">
-                <button
-                    onClick={handleDownloadPdf}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300 bg-primary-600 text-white shadow-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!canDownload}
-                >
-                    <DownloadIcon />
-                    Download SGPA
-                </button>
-            </div>
-        )}
+        {/* Sticky header that transitions in */}
+        <div className={`fixed top-0 left-0 right-0 z-10 py-4 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 ease-in-out ${isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+            <SgpaDisplay 
+                sgpa={semesterStats.sgpa}
+                offeredCredits={semesterStats.offeredCredits}
+                securedCredits={semesterStats.securedCredits}
+                totalPoints={semesterStats.totalPoints}
+                isSticky={true}
+            />
+        </div>
 
-        <div className="max-w-2xl mx-auto mt-12">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <div className="flex justify-center mb-6">
-                     <select
-                      value={selectedSemesterKey}
-                      onChange={handleSemesterChange}
-                      className="w-full max-w-xs bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        <div className="max-w-2xl mx-auto">
+            {canDownload && (
+                <div className="mt-8 text-center">
+                    <button
+                        onClick={handleDownloadPdf}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300 bg-primary-600 text-white shadow-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!canDownload}
                     >
-                      <option value="">Select a Semester</option>
-                      {Object.keys(SEMESTER_COURSES).map(key => (
-                        <option key={key} value={key}>
-                          Semester {key}
-                        </option>
-                      ))}
-                    </select>
+                        <DownloadIcon />
+                        Download SGPA
+                    </button>
                 </div>
-                
-                <div className="space-y-4">
-                  {courses.length > 0 ? (
-                    courses.map(course => (
-                      <div key={course.code} className="grid grid-cols-3 gap-2 items-center">
-                        <div className="col-span-2">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200">{course.name}</p>
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {course.code} &bull; {course.credits} Credits
-                          </p>
-                        </div>
-                        <select
-                          value={grades[course.code] || 'N/A'}
-                          onChange={e => handleGradeChange(course.code, e.target.value)}
-                          className="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            )}
+
+            <div className="mt-8">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                    <div className="flex justify-center mb-6">
+                         <select
+                          value={selectedSemesterKey}
+                          onChange={handleSemesterChange}
+                          className="w-full max-w-xs bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         >
-                          {GRADE_OPTIONS.map(grade => (
-                            <option key={grade} value={grade}>
-                              {grade}
+                          <option value="">Select a Semester</option>
+                          {Object.keys(SEMESTER_COURSES).map(key => (
+                            <option key={key} value={key}>
+                              Semester {key}
                             </option>
                           ))}
                         </select>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-                      <p>Please select a semester to see courses.</p>
                     </div>
-                  )}
+                    
+                    <div className="space-y-4">
+                      {courses.length > 0 ? (
+                        courses.map(course => (
+                          <div key={course.code} className="grid grid-cols-3 gap-2 items-center">
+                            <div className="col-span-2">
+                              <p className="font-semibold text-slate-800 dark:text-slate-200">{course.name}</p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {course.code} &bull; {course.credits} Credits
+                              </p>
+                            </div>
+                            <select
+                              value={grades[course.code] || 'N/A'}
+                              onChange={e => handleGradeChange(course.code, e.target.value)}
+                              className="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            >
+                              {GRADE_OPTIONS.map(grade => (
+                                <option key={grade} value={grade}>
+                                  {grade}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+                          <p>Please select a semester to see courses.</p>
+                        </div>
+                      )}
+                    </div>
                 </div>
             </div>
         </div>

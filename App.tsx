@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from './components/Header';
 import SgpaCalculator from './components/SgpaCalculator';
@@ -5,8 +6,28 @@ import CgpaCalculator from './components/CgpaCalculator';
 
 type View = 'sgpa' | 'cgpa';
 
+// Define state shapes to be managed by the App component
+interface SgpaState {
+  selectedSemesterKey: string;
+  grades: Record<string, string>;
+}
+
+interface CgpaState {
+  gpas: Record<string, string>;
+}
+
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('sgpa');
+
+  // Lifted state for calculators to persist data across view changes
+  const [sgpaState, setSgpaState] = useState<SgpaState>({
+    selectedSemesterKey: '',
+    grades: {},
+  });
+
+  const [cgpaState, setCgpaState] = useState<CgpaState>({
+    gpas: {},
+  });
 
   const getButtonClasses = (view: View) => {
     const baseClasses = 'px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300';
@@ -35,8 +56,8 @@ const App: React.FC = () => {
             </h3>
         </div>
 
-        {activeView === 'sgpa' && <SgpaCalculator />}
-        {activeView === 'cgpa' && <CgpaCalculator />}
+        {activeView === 'sgpa' && <SgpaCalculator sgpaState={sgpaState} setSgpaState={setSgpaState} />}
+        {activeView === 'cgpa' && <CgpaCalculator cgpaState={cgpaState} setCgpaState={setCgpaState} />}
 
       </main>
       <footer className="text-center py-6 mt-8 text-slate-500 dark:text-slate-400 text-sm">

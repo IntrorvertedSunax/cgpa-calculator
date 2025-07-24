@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SEMESTER_COURSES } from '../constants';
@@ -14,12 +15,41 @@ const semesterCreditMap = Object.fromEntries(
 
 const semesterKeys = Object.keys(semesterCreditMap);
 
-const CgpaCalculator: React.FC = () => {
-    const [gpas, setGpas] = useState<Record<string, string>>({});
+interface CgpaCalculatorProps {
+  cgpaState: {
+    gpas: Record<string, string>;
+  };
+  setCgpaState: React.Dispatch<React.SetStateAction<{
+    gpas: Record<string, string>;
+  }>>;
+}
+
+const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState }) => {
+    const { gpas } = cgpaState;
+    const [isSticky, setIsSticky] = useState(false);
+    const displayElementRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const displayElement = displayElementRef.current;
+        if (!displayElement) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsSticky(!entry.isIntersecting && entry.boundingClientRect.y < 0);
+            },
+            { threshold: 0 }
+        );
+        
+        observer.observe(displayElement);
+
+        return () => {
+            if (displayElement) observer.unobserve(displayElement);
+        };
+    }, []);
 
     const handleGpaChange = (semesterKey: string, value: string) => {
         if (/^(\d{1,1}(\.\d{0,3})?)?$/.test(value)) {
-            setGpas(prev => ({ ...prev, [semesterKey]: value }));
+            setCgpaState(prev => ({ ...prev, gpas: { ...prev.gpas, [semesterKey]: value } }));
         }
     };
 
@@ -126,54 +156,73 @@ const CgpaCalculator: React.FC = () => {
 
     return (
         <div>
-            <div className="text-center mb-8">
+            <div className="text-center mb-4">
                 <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mt-1 mb-2">
                     Cumulative Grade Point Average (CGPA)
                 </h2>
             </div>
             
-            <CgpaDisplay 
-                cgpa={cgpaData.cgpa} 
-                totalCredits={cgpaData.totalCredits}
-            />
+            {/* In-flow element that transitions out */}
+            <div 
+                ref={displayElementRef} 
+                className={`py-4 transition-all duration-300 ease-in-out ${isSticky ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
+            >
+                <CgpaDisplay 
+                    cgpa={cgpaData.cgpa} 
+                    totalCredits={cgpaData.totalCredits}
+                    isSticky={false}
+                />
+            </div>
 
-            {canDownload && (
-                <div className="max-w-sm mx-auto mt-6 text-center">
-                    <button
-                        onClick={handleDownloadPdf}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300 bg-primary-600 text-white shadow-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!canDownload}
-                    >
-                        <DownloadIcon />
-                        Download CGPA
-                    </button>
-                </div>
-            )}
-            
-            <div className="mt-12 max-w-2xl mx-auto">
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-                        {semesterKeys.map((key, index) => (
-                            <div key={key} className="flex items-center justify-between gap-4">
-                                <div>
-                                    <p className="font-semibold text-slate-800 dark:text-slate-200">Semester {key}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{semesterCreditMap[key]} Credits</p>
+            {/* Sticky header that transitions in */}
+            <div className={`fixed top-0 left-0 right-0 z-10 py-4 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 ease-in-out ${isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+                <CgpaDisplay 
+                    cgpa={cgpaData.cgpa} 
+                    totalCredits={cgpaData.totalCredits}
+                    isSticky={true}
+                />
+            </div>
+
+
+            <div className="max-w-2xl mx-auto">
+                {canDownload && (
+                    <div className="mt-8 text-center">
+                        <button
+                            onClick={handleDownloadPdf}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300 bg-primary-600 text-white shadow-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!canDownload}
+                        >
+                            <DownloadIcon />
+                            Download CGPA
+                        </button>
+                    </div>
+                )}
+                
+                <div className="mt-8">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                            {semesterKeys.map((key, index) => (
+                                <div key={key} className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <p className="font-semibold text-slate-800 dark:text-slate-200">Semester {key}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{semesterCreditMap[key]} Credits</p>
+                                    </div>
+                                    <input
+                                        id={`gpa-input-${key}`}
+                                        type="number"
+                                        step="0.001"
+                                        min="0"
+                                        max="4"
+                                        placeholder="GPA"
+                                        value={gpas[key] || ''}
+                                        onChange={e => handleGpaChange(key, e.target.value)}
+                                        onKeyDown={e => handleKeyDown(e, index)}
+                                        className="w-24 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm text-right focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                        aria-label={`GPA for Semester ${key}`}
+                                    />
                                 </div>
-                                <input
-                                    id={`gpa-input-${key}`}
-                                    type="number"
-                                    step="0.001"
-                                    min="0"
-                                    max="4"
-                                    placeholder="GPA"
-                                    value={gpas[key] || ''}
-                                    onChange={e => handleGpaChange(key, e.target.value)}
-                                    onKeyDown={e => handleKeyDown(e, index)}
-                                    className="w-24 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm text-right focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                    aria-label={`GPA for Semester ${key}`}
-                                />
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
