@@ -27,6 +27,7 @@ interface CgpaCalculatorProps {
 const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState }) => {
     const { gpas } = cgpaState;
     const [isSticky, setIsSticky] = useState(false);
+    const [isInputFocused, setIsInputFocused] = useState(false);
     const displayElementRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -175,7 +176,7 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
             </div>
 
             {/* Sticky header that transitions in */}
-            <div className={`fixed top-0 left-0 right-0 z-10 py-4 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 ease-in-out ${isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+            <div className={`fixed top-0 left-0 right-0 z-10 py-4 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 ease-in-out ${isSticky && !isInputFocused ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
                 <CgpaDisplay 
                     cgpa={cgpaData.cgpa} 
                     totalCredits={cgpaData.totalCredits}
@@ -217,7 +218,9 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
                                         value={gpas[key] || ''}
                                         onChange={e => handleGpaChange(key, e.target.value)}
                                         onKeyDown={e => handleKeyDown(e, index)}
-                                        className="w-24 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm text-right focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                        onFocus={() => setIsInputFocused(true)}
+                                        onBlur={() => setIsInputFocused(false)}
+                                        className="w-28 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm text-right focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                         aria-label={`GPA for Semester ${key}`}
                                     />
                                 </div>
