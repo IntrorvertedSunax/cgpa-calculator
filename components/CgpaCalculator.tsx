@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,7 +26,6 @@ interface CgpaCalculatorProps {
 const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState }) => {
     const { gpas } = cgpaState;
     const [isSticky, setIsSticky] = useState(false);
-    const [isInputFocused, setIsInputFocused] = useState(false);
     const displayElementRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -38,7 +36,7 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
             ([entry]) => {
                 setIsSticky(!entry.isIntersecting && entry.boundingClientRect.y < 0);
             },
-            { threshold: 0 }
+            { rootMargin: '-1px 0px 0px 0px', threshold: 1 }
         );
         
         observer.observe(displayElement);
@@ -55,15 +53,17 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
     };
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' || event.key === 'ArrowDown') {
             event.preventDefault();
             const nextIndex = currentIndex + 1;
             if (nextIndex < semesterKeys.length) {
-                const nextSemesterKey = semesterKeys[nextIndex];
-                const nextInput = document.getElementById(`gpa-input-${nextSemesterKey}`);
-                if (nextInput) {
-                    nextInput.focus();
-                }
+                document.getElementById(`gpa-input-${semesterKeys[nextIndex]}`)?.focus();
+            }
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            const prevIndex = currentIndex - 1;
+            if (prevIndex >= 0) {
+                document.getElementById(`gpa-input-${semesterKeys[prevIndex]}`)?.focus();
             }
         }
     };
@@ -90,14 +90,15 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
         if (cgpaData.totalCredits === 0) return;
 
         const doc = new jsPDF();
-        
-        // Title
+        doc.setFont('helvetica');
+
         doc.setFontSize(22);
+        doc.setTextColor(40);
         doc.text('Overall CGPA Report', 105, 20, { align: 'center' });
         doc.setFontSize(12);
+        doc.setTextColor(100);
         doc.text('Department of Electrical and Electronic Engineering', 105, 28, { align: 'center' });
 
-        // Table
         const tableColumn = ["Semester", "Semester Credits", "GPA", "Points Secured"];
         const tableRows: (string | number)[][] = [];
 
@@ -122,25 +123,24 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
             body: tableRows,
             startY: 45,
             theme: 'grid',
-            headStyles: { fillColor: [37, 99, 235] }, // primary-600
+            headStyles: { fillColor: [79, 70, 229] }, // primary-600
         });
 
-        // Summary
         const finalY = (doc as any).lastAutoTable.finalY;
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40);
         doc.text('Overall Result', 14, finalY + 20);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         
         const summaryText = `
-          Cumulative GPA (CGPA): ${cgpaData.cgpa.toFixed(3)}
+          CGPA: ${cgpaData.cgpa.toFixed(3)}
           Total Credits Completed: ${cgpaData.totalCredits.toFixed(2)}
           Total Points Secured: ${cgpaData.totalPoints.toFixed(2)}
         `;
         doc.text(summaryText, 14, finalY + 27);
         
-        // Footer
         const pageCount = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -154,20 +154,12 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
     };
 
     const canDownload = cgpaData.totalCredits > 0;
+    const cardBaseClasses = "transition-all duration-300 ease-in-out";
+    const glassEffectClasses = "bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-white/20 dark:border-neutral-800/80 shadow-lg";
 
     return (
-        <div>
-            <div className="text-center mb-4">
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mt-1 mb-2">
-                    Cumulative Grade Point Average (CGPA)
-                </h2>
-            </div>
-            
-            {/* In-flow element that transitions out */}
-            <div 
-                ref={displayElementRef} 
-                className={`py-4 transition-all duration-300 ease-in-out ${isSticky ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
-            >
+        <section>
+            <div ref={displayElementRef} className="py-4">
                 <CgpaDisplay 
                     cgpa={cgpaData.cgpa} 
                     totalCredits={cgpaData.totalCredits}
@@ -175,8 +167,7 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
                 />
             </div>
 
-            {/* Sticky header that transitions in */}
-            <div className={`fixed top-0 left-0 right-0 z-10 py-4 bg-gray-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-md transition-all duration-300 ease-in-out ${isSticky && !isInputFocused ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+            <div className={`fixed top-0 left-0 right-0 z-20 py-4 ${glassEffectClasses} transition-all duration-300 ease-in-out ${isSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
                 <CgpaDisplay 
                     cgpa={cgpaData.cgpa} 
                     totalCredits={cgpaData.totalCredits}
@@ -184,52 +175,44 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
                 />
             </div>
 
+            <div className="max-w-3xl mx-auto">
+                <div className={`mt-8 ${cardBaseClasses} ${glassEffectClasses} rounded-2xl p-6`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+                        {semesterKeys.map((key, index) => (
+                            <div key={key} className="flex items-center justify-between gap-4 p-2 rounded-lg transition-colors hover:bg-neutral-500/10">
+                                <div>
+                                    <p className="font-semibold text-neutral-800 dark:text-neutral-100">Semester {key}</p>
+                                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{semesterCreditMap[key]} Credits</p>
+                                </div>
+                                <input
+                                    id={`gpa-input-${key}`}
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="GPA"
+                                    value={gpas[key] || ''}
+                                    onChange={e => handleGpaChange(key, e.target.value)}
+                                    onKeyDown={e => handleKeyDown(e, index)}
+                                    className="w-28 bg-white/50 dark:bg-neutral-800/50 border border-neutral-300 dark:border-neutral-700 rounded-lg p-2 text-sm text-right focus:ring-2 focus:ring-primary-500/80 focus:border-primary-500 outline-none transition"
+                                    aria-label={`GPA for Semester ${key}`}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-            <div className="max-w-2xl mx-auto">
-                {canDownload && (
+                 {canDownload && (
                     <div className="mt-8 text-center">
                         <button
                             onClick={handleDownloadPdf}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-75 transition-all duration-300 bg-primary-600 text-white shadow-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!canDownload}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-950 focus:ring-primary-500/70 transition-all duration-300 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-primary-500/40 hover:from-primary-600 hover:to-primary-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
                             <DownloadIcon />
-                            Download CGPA
+                            Download Report
                         </button>
                     </div>
                 )}
-                
-                <div className="mt-8">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-                            {semesterKeys.map((key, index) => (
-                                <div key={key} className="flex items-center justify-between gap-4">
-                                    <div>
-                                        <p className="font-semibold text-slate-800 dark:text-slate-200">Semester {key}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{semesterCreditMap[key]} Credits</p>
-                                    </div>
-                                    <input
-                                        id={`gpa-input-${key}`}
-                                        type="number"
-                                        step="0.001"
-                                        min="0"
-                                        max="4"
-                                        placeholder="GPA"
-                                        value={gpas[key] || ''}
-                                        onChange={e => handleGpaChange(key, e.target.value)}
-                                        onKeyDown={e => handleKeyDown(e, index)}
-                                        onFocus={() => setIsInputFocused(true)}
-                                        onBlur={() => setIsInputFocused(false)}
-                                        className="w-28 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm text-right focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                        aria-label={`GPA for Semester ${key}`}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
             </div>
-        </div>
+        </section>
     );
 };
 

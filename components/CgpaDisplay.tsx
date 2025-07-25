@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface CgpaDisplayProps {
@@ -8,28 +7,30 @@ interface CgpaDisplayProps {
 }
 
 const CgpaDisplay: React.FC<CgpaDisplayProps> = ({ cgpa, totalCredits, isSticky }) => {
-    const getCgpaColor = () => {
-        if (cgpa >= 3.5) return 'text-green-500';
-        if (cgpa >= 3.0) return 'text-blue-500';
-        if (cgpa >= 2.5) return 'text-yellow-500';
-        if (cgpa > 0) return 'text-orange-500';
-        return 'text-slate-500';
+    const getCgpaGradient = () => {
+        if (cgpa >= 3.75) return 'from-green-500 to-green-400';
+        if (cgpa >= 3.25) return 'from-sky-500 to-sky-400';
+        if (cgpa >= 2.5) return 'from-amber-500 to-amber-400';
+        if (cgpa > 0) return 'from-orange-500 to-red-500';
+        return 'from-neutral-500 to-neutral-400';
     };
 
+    const baseCardClasses = "transition-all duration-300 ease-in-out";
+    const glassEffectClasses = "bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-white/20 dark:border-neutral-800/80 shadow-lg";
+    
     if (isSticky) {
-        // Sticky header version: Compact, modern, and horizontal
         return (
-            <div className="max-w-2xl mx-auto px-4">
-                <div className="flex justify-between items-center">
+            <div className="max-w-3xl mx-auto px-4">
+                <div className="flex justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-lg sm:text-xl font-semibold text-slate-600 dark:text-slate-300">
-                            Cumulative GPA (CGPA)
+                        <h2 className="text-sm sm:text-base font-semibold text-neutral-700 dark:text-neutral-200">
+                            Cumulative Grade Point Average (CGPA)
                         </h2>
-                        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
+                        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                             Based on <span className="font-semibold text-primary-500 dark:text-primary-400">{totalCredits.toFixed(2)}</span> total credits.
                         </p>
                     </div>
-                    <p className={`text-5xl sm:text-6xl font-bold transition-colors duration-300 ${getCgpaColor()}`}>
+                    <p className={`text-4xl sm:text-5xl font-bold bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent flex-shrink-0`}>
                         {cgpa.toFixed(3)}
                     </p>
                 </div>
@@ -37,16 +38,15 @@ const CgpaDisplay: React.FC<CgpaDisplayProps> = ({ cgpa, totalCredits, isSticky 
         );
     }
 
-    // Normal version: A larger, more detailed card
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-2xl mx-auto text-center">
-            <h2 className="text-lg font-medium text-slate-500 dark:text-slate-400">
-                Cumulative GPA (CGPA)
+        <div className={`${baseCardClasses} ${glassEffectClasses} rounded-2xl p-6 max-w-2xl mx-auto text-center`}>
+            <h2 className="text-lg font-medium text-neutral-500 dark:text-neutral-400">
+                Cumulative Grade Point Average (CGPA)
             </h2>
-            <p className={`text-7xl font-bold my-2 transition-colors duration-300 ${getCgpaColor()}`}>
+            <p className={`text-7xl font-extrabold my-2 bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent`}>
                 {cgpa.toFixed(3)}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 Based on <span className="font-semibold text-primary-500 dark:text-primary-400">{totalCredits.toFixed(2)}</span> total credits.
             </p>
         </div>
