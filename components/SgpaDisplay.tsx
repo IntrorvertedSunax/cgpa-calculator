@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface SgpaDisplayProps {
@@ -43,7 +44,7 @@ const SgpaDisplay: React.FC<SgpaDisplayProps> = ({ sgpa, offeredCredits, secured
                             </div>
                         </div>
                     </div>
-                    <p className={`text-4xl sm:text-5xl font-bold bg-gradient-to-br ${getSgpaGradient()} bg-clip-text text-transparent text-right flex-shrink-0`}>
+                    <p className={`text-4xl font-bold bg-gradient-to-br ${getSgpaGradient()} bg-clip-text text-transparent text-right flex-shrink-0`}>
                         {sgpa.toFixed(3)}
                     </p>
                 </div>
@@ -56,7 +57,7 @@ const SgpaDisplay: React.FC<SgpaDisplayProps> = ({ sgpa, offeredCredits, secured
             <h2 className="text-lg font-medium text-neutral-500 dark:text-neutral-400">
                 Grade Point Average (GPA)
             </h2>
-            <p className={`text-7xl font-extrabold my-2 bg-gradient-to-br ${getSgpaGradient()} bg-clip-text text-transparent`}>
+            <p className={`text-6xl sm:text-7xl font-extrabold my-2 bg-gradient-to-br ${getSgpaGradient()} bg-clip-text text-transparent`}>
                 {sgpa.toFixed(3)}
             </p>
             <div className="mt-4 pt-4 border-t border-neutral-300/50 dark:border-neutral-700/50 flex justify-center gap-x-6 sm:gap-x-8 text-sm text-neutral-500 dark:text-neutral-400">

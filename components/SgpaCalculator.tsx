@@ -20,9 +20,11 @@ interface SgpaCalculatorProps {
 const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState }) => {
   const { selectedSemesterKey, grades } = sgpaState;
   const [isSticky, setIsSticky] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const displayElementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setIsMounted(true);
     const displayElement = displayElementRef.current;
     if (!displayElement) return;
 
@@ -132,18 +134,44 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
     });
     
     const finalY = (doc as any).lastAutoTable.finalY;
-    doc.setFontSize(12);
-    doc.setTextColor(40);
-    doc.text('Summary:', 14, finalY + 15);
 
-    const summaryText = `
-      GPA: ${semesterStats.sgpa.toFixed(3)}
-      Credit Offered: ${semesterStats.offeredCredits.toFixed(2)}
-      Credit Attempted: ${semesterStats.attemptedCredits.toFixed(2)}
-      Credit Secured: ${semesterStats.securedCredits.toFixed(2)}
-      Total Points Secured: ${semesterStats.totalPoints.toFixed(2)}
-    `;
-    doc.text(summaryText, 14, finalY + 22);
+    const summaryBoxY = finalY + 15;
+    const summaryBoxWidth = doc.internal.pageSize.getWidth() - 28;
+    
+    doc.setFillColor(241, 245, 249); // neutral-100
+    doc.setDrawColor(226, 232, 240); // neutral-200
+    doc.roundedRect(14, summaryBoxY, summaryBoxWidth, 38, 3, 3, 'FD');
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    
+    let currentY = summaryBoxY + 10;
+    doc.text(`Credit Offered:`, 22, currentY);
+    doc.text(`${semesterStats.offeredCredits.toFixed(2)}`, 65, currentY, { align: 'right' });
+
+    currentY += 6;
+    doc.text(`Credit Attempted:`, 22, currentY);
+    doc.text(`${semesterStats.attemptedCredits.toFixed(2)}`, 65, currentY, { align: 'right' });
+
+    currentY += 6;
+    doc.text(`Credit Secured:`, 22, currentY);
+    doc.text(`${semesterStats.securedCredits.toFixed(2)}`, 65, currentY, { align: 'right' });
+
+    currentY += 6;
+    doc.text(`Points Secured:`, 22, currentY);
+    doc.text(`${semesterStats.totalPoints.toFixed(2)}`, 65, currentY, { align: 'right' });
+
+    const rightAlignX = doc.internal.pageSize.getWidth() - 22;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100);
+    doc.text('GPA', rightAlignX, summaryBoxY + 12, { align: 'right' });
+
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(79, 70, 229); // primary-600
+    doc.text(semesterStats.sgpa.toFixed(3), rightAlignX, summaryBoxY + 25, { align: 'right' });
 
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -157,12 +185,12 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
     doc.save(`GPA_Report_Semester_${selectedSemesterKey}.pdf`);
   };
 
-  const canDownload = semesterStats.offeredCredits > 0;
+  const canTakeAction = semesterStats.attemptedCredits > 0;
   const cardBaseClasses = "transition-all duration-300 ease-in-out";
   const glassEffectClasses = "bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-white/20 dark:border-neutral-800/80 shadow-lg";
 
   return (
-    <section>
+    <section className={`transition-all duration-500 ease-out ${isMounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
         <div ref={displayElementRef} className="py-4">
             <SgpaDisplay 
                 sgpa={semesterStats.sgpa}
@@ -184,7 +212,7 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
         </div>
 
         <div className="max-w-3xl mx-auto">
-            <div className={`mt-8 ${cardBaseClasses} ${glassEffectClasses} rounded-2xl p-6`}>
+            <div className={`mt-8 ${cardBaseClasses} ${glassEffectClasses} rounded-2xl p-4 sm:p-6`}>
                 <div className="flex justify-center mb-6">
                      <select
                       value={selectedSemesterKey}
@@ -200,11 +228,11 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
                     </select>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {courses.length > 0 ? (
                     courses.map(course => (
-                      <div key={course.code} className="grid grid-cols-3 gap-2 items-center p-2 rounded-lg transition-colors hover:bg-neutral-500/10">
-                        <div className="col-span-2">
+                      <div key={course.code} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg transition-colors hover:bg-neutral-500/10">
+                        <div className="flex-grow">
                           <p className="font-semibold text-neutral-800 dark:text-neutral-100">{course.name}</p>
                           <p className="text-sm text-neutral-500 dark:text-neutral-400">
                             {course.code} &bull; {course.credits} Credits
@@ -213,7 +241,7 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
                         <select
                           value={grades[course.code] || 'N/A'}
                           onChange={e => handleGradeChange(course.code, e.target.value)}
-                          className="w-full bg-white/50 dark:bg-neutral-800/50 border border-neutral-300 dark:border-neutral-700 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary-500/80 focus:border-primary-500 outline-none transition"
+                          className="w-full sm:w-32 bg-white/50 dark:bg-neutral-800/50 border border-neutral-300 dark:border-neutral-700 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary-500/80 focus:border-primary-500 outline-none transition"
                         >
                           {GRADE_OPTIONS.map(grade => (
                             <option key={grade} value={grade}>
@@ -231,11 +259,11 @@ const SgpaCalculator: React.FC<SgpaCalculatorProps> = ({ sgpaState, setSgpaState
                 </div>
             </div>
 
-            {canDownload && (
+            {canTakeAction && (
                 <div className="mt-8 text-center">
                     <button
                         onClick={handleDownloadPdf}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-950 focus:ring-primary-500/70 transition-all duration-300 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-primary-500/40 hover:from-primary-600 hover:to-primary-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-950 focus:ring-neutral-500/70 transition-all duration-300 bg-neutral-700 text-white shadow-lg hover:shadow-neutral-500/40 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                         <DownloadIcon />
                         Download Report

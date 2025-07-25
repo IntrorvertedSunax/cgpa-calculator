@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface CgpaDisplayProps {
@@ -30,7 +31,7 @@ const CgpaDisplay: React.FC<CgpaDisplayProps> = ({ cgpa, totalCredits, isSticky 
                             Based on <span className="font-semibold text-primary-500 dark:text-primary-400">{totalCredits.toFixed(2)}</span> total credits.
                         </p>
                     </div>
-                    <p className={`text-4xl sm:text-5xl font-bold bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent flex-shrink-0`}>
+                    <p className={`text-4xl font-bold bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent flex-shrink-0`}>
                         {cgpa.toFixed(3)}
                     </p>
                 </div>
@@ -43,7 +44,7 @@ const CgpaDisplay: React.FC<CgpaDisplayProps> = ({ cgpa, totalCredits, isSticky 
             <h2 className="text-lg font-medium text-neutral-500 dark:text-neutral-400">
                 Cumulative Grade Point Average (CGPA)
             </h2>
-            <p className={`text-7xl font-extrabold my-2 bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent`}>
+            <p className={`text-6xl sm:text-7xl font-extrabold my-2 bg-gradient-to-br ${getCgpaGradient()} bg-clip-text text-transparent`}>
                 {cgpa.toFixed(3)}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">

@@ -26,9 +26,11 @@ interface CgpaCalculatorProps {
 const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState }) => {
     const { gpas } = cgpaState;
     const [isSticky, setIsSticky] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const displayElementRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        setIsMounted(true);
         const displayElement = displayElementRef.current;
         if (!displayElement) return;
 
@@ -127,20 +129,37 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
         });
 
         const finalY = (doc as any).lastAutoTable.finalY;
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(40);
-        doc.text('Overall Result', 14, finalY + 20);
+        
+        const summaryBoxY = finalY + 15;
+        const summaryBoxWidth = doc.internal.pageSize.getWidth() - 28;
+
+        doc.setFillColor(241, 245, 249); // neutral-100
+        doc.setDrawColor(226, 232, 240); // neutral-200
+        doc.roundedRect(14, summaryBoxY, summaryBoxWidth, 32, 3, 3, 'FD');
+
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        
+        let currentY = summaryBoxY + 12;
+        doc.text(`Total Credits Completed:`, 22, currentY);
+        doc.text(`${cgpaData.totalCredits.toFixed(2)}`, 75, currentY, { align: 'right' });
+
+        currentY += 7;
+        doc.text(`Total Points Secured:`, 22, currentY);
+        doc.text(`${cgpaData.totalPoints.toFixed(2)}`, 75, currentY, { align: 'right' });
+
+        const rightAlignX = doc.internal.pageSize.getWidth() - 22;
         doc.setFontSize(12);
-        
-        const summaryText = `
-          CGPA: ${cgpaData.cgpa.toFixed(3)}
-          Total Credits Completed: ${cgpaData.totalCredits.toFixed(2)}
-          Total Points Secured: ${cgpaData.totalPoints.toFixed(2)}
-        `;
-        doc.text(summaryText, 14, finalY + 27);
-        
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100);
+        doc.text('CGPA', rightAlignX, summaryBoxY + 12, { align: 'right' });
+
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(79, 70, 229); // primary-600
+        doc.text(cgpaData.cgpa.toFixed(3), rightAlignX, summaryBoxY + 25, { align: 'right' });
+
         const pageCount = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -153,12 +172,12 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
         doc.save('CGPA_Report.pdf');
     };
 
-    const canDownload = cgpaData.totalCredits > 0;
+    const canTakeAction = cgpaData.totalCredits > 0;
     const cardBaseClasses = "transition-all duration-300 ease-in-out";
     const glassEffectClasses = "bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-white/20 dark:border-neutral-800/80 shadow-lg";
 
     return (
-        <section>
+        <section className={`transition-all duration-500 ease-out ${isMounted ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'}`}>
             <div ref={displayElementRef} className="py-4">
                 <CgpaDisplay 
                     cgpa={cgpaData.cgpa} 
@@ -176,8 +195,8 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
             </div>
 
             <div className="max-w-3xl mx-auto">
-                <div className={`mt-8 ${cardBaseClasses} ${glassEffectClasses} rounded-2xl p-6`}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+                <div className={`mt-8 ${cardBaseClasses} ${glassEffectClasses} rounded-2xl p-4 sm:p-6`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                         {semesterKeys.map((key, index) => (
                             <div key={key} className="flex items-center justify-between gap-4 p-2 rounded-lg transition-colors hover:bg-neutral-500/10">
                                 <div>
@@ -192,7 +211,7 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
                                     value={gpas[key] || ''}
                                     onChange={e => handleGpaChange(key, e.target.value)}
                                     onKeyDown={e => handleKeyDown(e, index)}
-                                    className="w-28 bg-white/50 dark:bg-neutral-800/50 border border-neutral-300 dark:border-neutral-700 rounded-lg p-2 text-sm text-right focus:ring-2 focus:ring-primary-500/80 focus:border-primary-500 outline-none transition"
+                                    className="w-24 sm:w-28 bg-white/50 dark:bg-neutral-800/50 border border-neutral-300 dark:border-neutral-700 rounded-lg p-2 text-sm text-right focus:ring-2 focus:ring-primary-500/80 focus:border-primary-500 outline-none transition"
                                     aria-label={`GPA for Semester ${key}`}
                                 />
                             </div>
@@ -200,11 +219,11 @@ const CgpaCalculator: React.FC<CgpaCalculatorProps> = ({ cgpaState, setCgpaState
                     </div>
                 </div>
 
-                 {canDownload && (
+                 {canTakeAction && (
                     <div className="mt-8 text-center">
                         <button
                             onClick={handleDownloadPdf}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-950 focus:ring-primary-500/70 transition-all duration-300 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-primary-500/40 hover:from-primary-600 hover:to-primary-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-950 focus:ring-neutral-500/70 transition-all duration-300 bg-neutral-700 text-white shadow-lg hover:shadow-neutral-500/40 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
                             <DownloadIcon />
                             Download Report
